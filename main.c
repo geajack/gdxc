@@ -1,5 +1,16 @@
 #include <raylib.h>
 
+#define PLAYER_WIDTH 50
+#define PLAYER_HEIGHT 60
+#define SPEED_INCREMENT 3
+#define FRICTION 0.90
+#define GRAVITY 1
+
+typedef struct {
+  float x;
+  float y;
+} Velocity;
+
 int main()
 {
     SetTraceLogLevel(LOG_NONE);
@@ -10,11 +21,11 @@ int main()
     int w = GetScreenWidth();
     int h = GetScreenHeight();
     
-    Rectangle player = { .width = 50, .height = 60 };
+    Rectangle player = { .width = PLAYER_WIDTH, .height = PLAYER_HEIGHT };
     player.x = (w - player.width) / 2;
     player.y = (h - player.height) / 2;
 
-    int speed = 20;
+    Velocity velocity = {0};
 
     SetTargetFPS(60);
 
@@ -23,15 +34,32 @@ int main()
         w = GetScreenWidth();
         h = GetScreenHeight();
 
-        if (IsKeyDown(KEY_LEFT)) player.x -= speed;
-        if (IsKeyDown(KEY_RIGHT)) player.x += speed;
-        if (IsKeyDown(KEY_UP)) player.y -= speed;
-        if (IsKeyDown(KEY_DOWN)) player.y += speed;
+        if (IsKeyDown(KEY_LEFT)) velocity.x -= SPEED_INCREMENT;
+        if (IsKeyDown(KEY_RIGHT)) velocity.x += SPEED_INCREMENT;
+        if (IsKeyDown(KEY_UP)) velocity.y -= SPEED_INCREMENT;
+        if (IsKeyDown(KEY_DOWN)) velocity.y += SPEED_INCREMENT;
 
-        if (player.x < 0) player.x = 0;
-        if (player.x > w - player.width) player.x = w - player.width;
-        if (player.y < 0) player.y = 0;
-        if (player.y > h - player.height) player.y = h - player.height;
+        player.x += (int)velocity.x;
+        player.y += (int)velocity.y;
+        if (player.x < 0) {
+          player.x = 0;
+          velocity.x = 0;
+        }
+        if (player.y < 0) {
+          player.y = 0;
+          velocity.y = 0;
+        }
+        if (player.x > (w-PLAYER_WIDTH)) {
+          player.x = (w-PLAYER_WIDTH);
+          velocity.x = 0;
+        }
+        if (player.y > (h-PLAYER_HEIGHT)) {
+          player.y = h-PLAYER_HEIGHT;
+          velocity.y = 0;
+        }
+
+        velocity.x *= FRICTION;
+        velocity.y += GRAVITY;
 
         BeginDrawing();
 
@@ -44,3 +72,4 @@ int main()
 
     return 0;
 }
+
