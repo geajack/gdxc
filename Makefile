@@ -1,5 +1,5 @@
 all:
-	clang -g -o game -lraylib main.c
+	clang -g -o game main.c -lraylib -lGL -lm
 
 run: all
 	./game
