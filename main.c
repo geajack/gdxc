@@ -12,14 +12,12 @@
 #define FRICTION 0.90
 #define GRAVITY 1
 
-typedef struct 
-{
-    float x;
-    float y;
-} Velocity;
+#define COLLECTABLE_RADIUS 30
 
 static Vector2 last_coords[PLAYER_TRAIL_LENGTH];
 static int last_coords_count = 0;
+
+#define ArrayCount(arr) (sizeof (arr) / sizeof *(arr))
 
 int main()
 {
@@ -35,7 +33,14 @@ int main()
     player.x = (w - player.width) / 2;
     player.y = (h - player.height) / 2;
 
-    Velocity velocity = {0};
+    Vector2 velocity = {0};
+
+    Vector2 collectables[3];
+    for (int index = 0; index < ArrayCount(collectables); index += 1)
+    {
+        collectables[index].x = GetRandomValue(2 * COLLECTABLE_RADIUS, w - 2 * COLLECTABLE_RADIUS);
+        collectables[index].y = GetRandomValue(2 * COLLECTABLE_RADIUS, h - 2 * COLLECTABLE_RADIUS);
+    }
 
     SetTargetFPS(60);
 
@@ -84,6 +89,15 @@ int main()
         if (last_coords_count >= ARRAY_SIZE(last_coords))
             last_coords_count = 0;
 
+        for (int index = 0; index < ArrayCount(collectables); index += 1)
+        {
+            if (CheckCollisionCircleRec(collectables[index], COLLECTABLE_RADIUS, player))
+            {
+                collectables[index].x = GetRandomValue(2 * COLLECTABLE_RADIUS, w - 2 * COLLECTABLE_RADIUS);
+                collectables[index].y = GetRandomValue(2 * COLLECTABLE_RADIUS, h - 2 * COLLECTABLE_RADIUS);
+            }
+        }
+
         BeginDrawing();
 
         ClearBackground((Color) { 0, 0, 0, 255 });        
@@ -96,6 +110,12 @@ int main()
             DrawCircle(coords.x + player.width / 2, coords.y + player.height / 2, radius, (Color){ 0, 121, 241, 255 });
         }
         
+        for (int index = 0; index < ArrayCount(collectables); index += 1)
+        {
+            Vector2 c = collectables[index];
+            DrawCircle(c.x, c.y, COLLECTABLE_RADIUS, (Color) { 0xF4, 0xCA, 0x16, 0xFF });
+        }
+
         // draw a bamboo hat
         DrawTriangle(
             (Vector2){ player.x + player.width / 2, player.y - 35 }, 
