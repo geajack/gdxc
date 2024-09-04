@@ -1,5 +1,11 @@
+
+#include <stdlib.h>
+#include <string.h>
+
 #include <math.h>
 #include <raylib.h>
+#include <rlgl.h>
+#include <raymath.h>
 
 #define ARRAY_SIZE(array) sizeof(array) / sizeof(array[0])
 
@@ -19,8 +25,6 @@ static int last_coords_count = 0;
 
 static int debug_enabled = 0;
 #define KEY_DEBUG_TOGGLE KEY_F1
-
-#define ArrayCount(arr) (sizeof (arr) / sizeof *(arr))
 
 #define BAMBOO_CAP 12
 #define BAMBOO_THICC 12
@@ -49,6 +53,18 @@ float combo_drop_timer = 0.f;
 
 ////////////////////
 
+#define GUN_WIDTH (PLAYER_WIDTH * 0.2f)
+#define GUN_HEIGHT (PLAYER_HEIGHT * 0.8f)
+
+#define MAX_BULLETS_ON_SCREEN 64
+#define BULLET_SPEED 500 /* pixels per second */
+#define BULLET_RADIUS 16
+struct bullet
+{
+    Vector2 pos, dir;
+};
+
+
 const Color ColorLerp(const Color c1, const Color c2, const float t);
 void bamboo_generate(int w, int h);
 
@@ -69,12 +85,15 @@ int main()
     Vector2 velocity = {0};
 
     Vector2 collectables[3];
-    for (int index = 0; index < ArrayCount(collectables); index += 1)
+    for (int index = 0; index < ARRAY_SIZE(collectables); index += 1)
     {
         collectables[index].x = GetRandomValue(2 * COLLECTABLE_RADIUS, w - 2 * COLLECTABLE_RADIUS);
         collectables[index].y = GetRandomValue(2 * COLLECTABLE_RADIUS, h - 2 * COLLECTABLE_RADIUS);
     }
     
+    struct bullet bullets[MAX_BULLETS_ON_SCREEN];
+    int bullets_count = 0;
+
     bamboo_generate(w, h);
 
     SetTargetFPS(60);
@@ -132,7 +151,7 @@ int main()
         if (last_coords_count >= ARRAY_SIZE(last_coords))
             last_coords_count = 0;
 
-        for (int index = 0; index < ArrayCount(collectables); index += 1)
+        for (int index = 0; index < ARRAY_SIZE(collectables); index += 1)
         {
             if (CheckCollisionCircleRec(collectables[index], COLLECTABLE_RADIUS, player))
             {
@@ -165,9 +184,36 @@ int main()
             }
         }
 
+        Rectangle gun = {
+            .x = player.x + player.width / 2 - GUN_WIDTH / 2,
+            .y = player.y + player.height / 2,
+            .width = GUN_WIDTH,
+            .height = GUN_HEIGHT,
+        };
+        Vector2 gun_direction = Vector2Normalize(Vector2Subtract(GetMousePosition(), (Vector2) { gun.x + GUN_WIDTH / 2, gun.y }));
+        if (bullets_count < MAX_BULLETS_ON_SCREEN && IsMouseButtonPressed(0)) {
+            bullets[bullets_count].pos = (Vector2) { .x = gun.x + GUN_WIDTH / 2, .y = gun.y };
+            bullets[bullets_count].dir = gun_direction;
+            bullets_count += 1;
+        }
+        for (int index = 0; index < bullets_count; index += 1)
+        {
+            Vector2 pos = Vector2Add(bullets[index].pos, Vector2Scale(bullets[index].dir, BULLET_SPEED * GetFrameTime()));
+            if (pos.x < 0 || pos.x > w || pos.y < 0 || pos.y > h)
+            {
+                memmove(bullets + index, bullets + index + 1, sizeof *bullets * (bullets_count - index - 1));
+                index -= 1;
+                bullets_count -= 1;
+            }
+            else
+            {
+                bullets[index].pos = pos;
+            }
+        }
+
         BeginDrawing();
 
-        ClearBackground((Color) { 0, 0, 0, 255 });        
+        ClearBackground((Color) { 0, 0, 0, 255 });
         
         Color color_sky = GetColor(0xcbddaaff);
         Color color_base = GetColor(0x47d666ff);
@@ -187,7 +233,7 @@ int main()
             DrawCircle(coords.x + player.width / 2, coords.y + player.height / 2, radius, (Color){ 0, 121, 241, 255 });
         }
         
-        for (int index = 0; index < ArrayCount(collectables); index += 1)
+        for (int index = 0; index < ARRAY_SIZE(collectables); index += 1)
         {
             Vector2 c = collectables[index];
             DrawCircle(c.x, c.y, COLLECTABLE_RADIUS, (Color) { 0xF4, 0xCA, 0x16, 0xFF });
@@ -202,6 +248,21 @@ int main()
         );
 
         DrawRectangle(player.x, player.y, player.width, player.height, (Color) { 255, 255, 255, 255 });
+
+        rlPushMatrix();
+        {
+            rlTranslatef(gun.x + GUN_WIDTH / 2, gun.y, 0);
+            float dot = Vector2DotProduct((Vector2) { 0, 1 }, gun_direction);
+            float angle = gun_direction.x > 0 ? acosf(dot) : -acosf(dot);
+            rlRotatef(angle * (180.f / PI), 0, 0, -1);
+            DrawRectangle(-GUN_WIDTH / 2, 0, gun.width, gun.height, (Color) { 0xFF, 0x33, 0x33, 0xFF });
+        }
+        rlPopMatrix();
+
+        for (int index = 0; index < bullets_count; index += 1) {
+            struct bullet b = bullets[index];
+            DrawCircle(b.pos.x, b.pos.y, BULLET_RADIUS, (Color) {0xFF, 0x44, 0x44, 0xFF });
+        }
 
         if (debug_enabled) {
             DrawCircleV((Vector2){player.x, player.y}, 6.0f, MAGENTA);
