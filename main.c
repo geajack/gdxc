@@ -29,6 +29,27 @@ Vector2 bamboo[BAMBOO_CAP];
 float bamboo_tilt[BAMBOO_CAP];
 float bamboo_width = 5.0f;
 
+////HUD Settings
+////////////////
+#define COMBO_DROP_TIME 2.0f //In seconds
+#define COMBO_BAR_WIDTH 120
+#define COMBO_BAR_HEIGHT 20
+#define COMBO_BAR_PADDING 4 //Padding from edge of screen
+#define COMBO_BAR_FULL_COLOR (Color){0,255,0,255}
+#define COMBO_BAR_EMPTY_COLOR (Color){128,0,0,255}
+int player_score = 0;
+int combo_mult = 1;
+float combo_drop_timer = 0.f;
+
+#define SCORE_FONT_SIZE 24
+#define SCORE_PADDING 4 //Padding from edge of screen
+
+#define COMBO_FONT_SIZE 16
+#define COMBO_PADDING 8 //Padding from edge of screen
+
+////////////////////
+
+const Color ColorLerp(const Color c1, const Color c2, const float t);
 void bamboo_generate(int w, int h);
 
 int main()
@@ -117,6 +138,10 @@ int main()
             {
                 collectables[index].x = GetRandomValue(2 * COLLECTABLE_RADIUS, w - 2 * COLLECTABLE_RADIUS);
                 collectables[index].y = GetRandomValue(2 * COLLECTABLE_RADIUS, h - 2 * COLLECTABLE_RADIUS);
+
+                player_score+=combo_mult;
+                combo_mult++;
+                combo_drop_timer = COMBO_DROP_TIME;
             }
         }
 
@@ -130,6 +155,13 @@ int main()
                     player.y = b.y - PLAYER_HEIGHT;
                     velocity.y = 0;
                 }
+            }
+        }
+
+        if(combo_drop_timer>0.f){
+            combo_drop_timer=fmax(0.f,combo_drop_timer-GetFrameTime());
+            if(combo_drop_timer==0.f){
+                combo_mult=1;
             }
         }
 
@@ -175,10 +207,47 @@ int main()
             DrawCircleV((Vector2){player.x, player.y}, 6.0f, MAGENTA);
         }
 
+        /////////////
+        //HUD overlay
+        /////////////
+        
+        //Score display
+        const char*score_str = TextFormat("Score: %d",player_score);
+        Vector2 score_text_size = MeasureTextEx(GetFontDefault(),score_str,SCORE_FONT_SIZE,2);
+        DrawTextEx(GetFontDefault(),score_str,(Vector2){GetScreenWidth()-score_text_size.x-SCORE_PADDING,0},SCORE_FONT_SIZE,2,BLACK); //Right-aligned to screen edge
+
+        //Combobar display
+        Vector2 combo_bar_upper_left_corner = (Vector2){GetScreenWidth()-COMBO_BAR_PADDING-COMBO_BAR_WIDTH,score_text_size.y+COMBO_BAR_PADDING};
+        int remainingtime_combobar_width = combo_drop_timer/COMBO_DROP_TIME*COMBO_BAR_WIDTH;
+
+        Color interpolated_remainingtime_col = ColorLerp(COMBO_BAR_EMPTY_COLOR,COMBO_BAR_FULL_COLOR,combo_drop_timer/COMBO_DROP_TIME);
+        DrawRectangle(combo_bar_upper_left_corner.x,combo_bar_upper_left_corner.y,remainingtime_combobar_width,COMBO_BAR_HEIGHT,interpolated_remainingtime_col);
+        DrawRectangleLines(combo_bar_upper_left_corner.x,combo_bar_upper_left_corner.y,COMBO_BAR_WIDTH,COMBO_BAR_HEIGHT,BLACK);
+
+        //Combo text display
+        const char*combo_str = TextFormat("x%d",combo_mult);
+        Vector2 combo_text_size = MeasureTextEx(GetFontDefault(),combo_str,COMBO_FONT_SIZE,0);
+        DrawTextEx(GetFontDefault(),combo_str,(Vector2){combo_bar_upper_left_corner.x+COMBO_BAR_WIDTH-combo_text_size.x-COMBO_PADDING,combo_bar_upper_left_corner.y+COMBO_BAR_HEIGHT-combo_text_size.y},COMBO_FONT_SIZE,0,BLACK);
+
+        /////////////
+
         EndDrawing();
     }
 
     return 0;
+}
+
+const float lerp(const float f1, const float f2, const float t){
+    return f1*(1-t)+f2*t;
+}
+
+const Color ColorLerp(const Color c1, const Color c2, const float t){
+    return (Color){
+        lerp(c1.r,c2.r,t),
+        lerp(c1.g,c2.g,t),
+        lerp(c1.b,c2.b,t),
+        lerp(c1.a,c2.a,t),
+    };
 }
 
 void bamboo_generate(int w, int h) {
