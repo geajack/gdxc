@@ -17,7 +17,19 @@
 static Vector2 last_coords[PLAYER_TRAIL_LENGTH];
 static int last_coords_count = 0;
 
+static int debug_enabled = 0;
+#define KEY_DEBUG_TOGGLE KEY_F1
+
 #define ArrayCount(arr) (sizeof (arr) / sizeof *(arr))
+
+#define BAMBOO_CAP 12
+#define BAMBOO_THICC 12
+#define BAMBOO_COLOR GetColor(0x7fa643ff)
+Vector2 bamboo[BAMBOO_CAP];
+float bamboo_tilt[BAMBOO_CAP];
+float bamboo_width = 5.0f;
+
+void bamboo_generate(int w, int h);
 
 int main()
 {
@@ -41,11 +53,21 @@ int main()
         collectables[index].x = GetRandomValue(2 * COLLECTABLE_RADIUS, w - 2 * COLLECTABLE_RADIUS);
         collectables[index].y = GetRandomValue(2 * COLLECTABLE_RADIUS, h - 2 * COLLECTABLE_RADIUS);
     }
+    
+    bamboo_generate(w, h);
 
     SetTargetFPS(60);
 
     while (!WindowShouldClose())
     {
+        if (IsKeyPressed(KEY_DEBUG_TOGGLE)) {
+            debug_enabled = !debug_enabled;
+        }
+        
+        if (IsKeyPressed(KEY_F5)) {
+            bamboo_generate(w, h);
+        }
+        
         w = GetScreenWidth();
         h = GetScreenHeight();
 
@@ -98,9 +120,32 @@ int main()
             }
         }
 
+        if (velocity.y > 0) {
+            for (int index = 0; index < BAMBOO_CAP; ++index) {
+                Vector2 b = bamboo[index];
+                float fudge_factor = velocity.y;
+                int feet_above_bamboo = player.y + PLAYER_HEIGHT < b.y + fudge_factor;
+                int would_fall_below = player.y + PLAYER_HEIGHT + velocity.y >= b.y;
+                if (feet_above_bamboo && would_fall_below && CheckCollisionCircleRec(b, bamboo_width * 2.0f, player)) {
+                    player.y = b.y - PLAYER_HEIGHT;
+                    velocity.y = 0;
+                }
+            }
+        }
+
         BeginDrawing();
 
         ClearBackground((Color) { 0, 0, 0, 255 });        
+        
+        Color color_sky = GetColor(0xcbddaaff);
+        Color color_base = GetColor(0x47d666ff);
+        DrawRectangleGradientV(0, 0, w, h, color_sky, color_base);
+        
+        for (int i = 0; i < BAMBOO_CAP; i++) {
+            Vector2 src = bamboo[i];
+            Vector2 dst = (Vector2){src.x + bamboo_tilt[i], h};
+            DrawLineEx(src, dst, BAMBOO_THICC, BAMBOO_COLOR);
+        }
         
         for (int i = 0; i < ARRAY_SIZE(last_coords); i++)
         {
@@ -126,9 +171,24 @@ int main()
 
         DrawRectangle(player.x, player.y, player.width, player.height, (Color) { 255, 255, 255, 255 });
 
+        if (debug_enabled) {
+            DrawCircleV((Vector2){player.x, player.y}, 6.0f, MAGENTA);
+        }
+
         EndDrawing();
     }
 
     return 0;
 }
 
+void bamboo_generate(int w, int h) {
+    float bamboo_heightline = h - (float)h * 0.5f;
+    float bamboo_height_variation = bamboo_heightline * 0.4f;
+    float bamboo_x_variation = bamboo_width * 10.0f;
+    float bamboo_step = w / ((float)BAMBOO_CAP - 1);
+    for (int index = 0; index < BAMBOO_CAP; ++index) {
+        bamboo[index].y = bamboo_heightline + GetRandomValue(-bamboo_height_variation, bamboo_height_variation);
+        bamboo[index].x = bamboo_step * index + GetRandomValue(-bamboo_x_variation, bamboo_x_variation);
+        bamboo_tilt[index] = GetRandomValue(-bamboo_x_variation, bamboo_x_variation);
+    }
+}
