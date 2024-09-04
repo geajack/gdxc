@@ -1,4 +1,4 @@
-# The Game Design Exquisite Corpse
+# The Game Development Exquisite Corpse
 
 ![dfdf](docs/video1.gif) ![](docs/video2.gif)
 
