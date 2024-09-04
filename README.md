@@ -2,7 +2,7 @@
 
 ![dfdf](docs/video1.gif) ![](docs/video2.gif)
 
-*State of the project on day 1 versus now (September 4th, after four turns)*
+*State of the project on day one versus now (September 4th, after four turns)*
 
 This is a game design [exquisite corpse](https://en.wikipedia.org/wiki/Exquisite_corpse). You should download this code, add a game mechanic or some other small change or improvement, and submit it. This project uses C and the Raylib library.
 
