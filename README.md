@@ -4,7 +4,7 @@
 
 *State of the project on day one versus now (September 4th, after four turns). Naturally, FPS is smoother when it's not in GIF form!*
 
-This is a game design [exquisite corpse](https://en.wikipedia.org/wiki/Exquisite_corpse). You should download this code, add a game mechanic or some other small change or improvement, and submit it. This project uses C and the Raylib library.
+This is a game design [exquisite corpse](https://en.wikipedia.org/wiki/Exquisite_corpse). You should download this code, add a game mechanic or some other small change or improvement, and submit it. This project uses C and the [Raylib](https://www.raylib.com/) library, but you don't need experience with either to participate!
 
 To participate, check the [request thread](https://github.com/geajack/gdxc/issues/1). If no one has currently claimed the right to play the next "turn", the last comment in that thread will be from me, stating that the next turn is open. In that case, make a comment claiming it. You don't have to wait for approval from anyone to start coding, just submit a pull request. You can participate as many times as you want, but never twice in a row.
 
@@ -24,3 +24,7 @@ To participate, check the [request thread](https://github.com/geajack/gdxc/issue
 12. You are encouraged to take the game in unexpected directions! Just because the game so far looks like it belongs to one genre, that doesn't mean you can't add a mechanic usually associated with a different genre.
 13. You can't play (submit code) two turns in a row.
 14. Don't touch this README or the LICENSE.
+
+## Can I participate? I don't know how to use C or Raylib!
+
+**Absolutely!** We are very open to beginners. [Raylib](http://raylib.com/) is an explicitly beginner-friendly library, in fact it was designed by a teacher specifically for a game development course, for people with no coding experience. Programming in Raylib is as simple as checking input with things like `IsKeyPressed()` and drawing the game with things like `DrawRectangle()`. If you need any further help, even with something basic like installing a C compiler, that's what the [discussion forum](https://github.com/geajack/gdxc/discussions) is for.
