@@ -35,6 +35,7 @@ static int debug_enabled = 0;
 #define BAMBOO_COLOR GetColor(0x7fa643ff)
 Vector2 bamboo[BAMBOO_CAP];
 float bamboo_tilt[BAMBOO_CAP];
+float bamboo_wobble[BAMBOO_CAP];
 float bamboo_width = 5.0f;
 
 ////HUD Settings
@@ -187,6 +188,10 @@ int main()
                 int feet_above_bamboo = player.y + PLAYER_HEIGHT < b.y + fudge_factor;
                 int would_fall_below = player.y + PLAYER_HEIGHT + velocity.y >= b.y;
                 if (feet_above_bamboo && would_fall_below && CheckCollisionCircleRec(b, bamboo_width * 2.0f, player)) {
+                    if (player_jump_count > 0)
+                    {
+                        bamboo_wobble[index] += 20;
+                    }
                     player.y = b.y - PLAYER_HEIGHT;
                     velocity.y = 0;
                     player_jump_count = 0;
@@ -237,8 +242,10 @@ int main()
         DrawRectangleGradientV(0, 0, w, h, color_sky, color_base);
         
         for (int i = 0; i < BAMBOO_CAP; i++) {
+            bamboo_wobble[i] *= 0.5;
             Vector2 src = bamboo[i];
             Vector2 dst = (Vector2){src.x + bamboo_tilt[i], h};
+            src.x += bamboo_wobble[i];
             DrawLineEx(src, dst, BAMBOO_THICC, BAMBOO_COLOR);
         }
         
@@ -329,8 +336,8 @@ const Color ColorLerp(const Color c1, const Color c2, const float t){
 }
 
 void bamboo_generate(int w, int h) {
-    float bamboo_heightline = h - (float)h * 0.3f;
-    float bamboo_height_variation = bamboo_heightline * 0.4f;
+    float bamboo_heightline = h - (float)h * 0.4f;
+    float bamboo_height_variation = bamboo_heightline * 0.3f;
     float bamboo_x_variation = bamboo_width * 10.0f;
     float bamboo_step = w / ((float)BAMBOO_CAP - 1);
     for (int index = 0; index < BAMBOO_CAP; ++index) {
