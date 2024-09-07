@@ -14,8 +14,12 @@
 #define PLAYER_WIDTH 50
 #define PLAYER_HEIGHT 60
 
-#define SPEED_INCREMENT 3
-#define FRICTION 0.90
+#define SPEED_LIMIT 30
+#define X_SPEED_INCREMENT 2
+#define JUMP_SPEED 20
+#define JUMP_LIMIT 2 // double, triple jump...
+
+#define FRICTION 0.75
 #define GRAVITY 1
 
 #define COLLECTABLE_RADIUS 30
@@ -31,6 +35,7 @@ static int debug_enabled = 0;
 #define BAMBOO_COLOR GetColor(0x7fa643ff)
 Vector2 bamboo[BAMBOO_CAP];
 float bamboo_tilt[BAMBOO_CAP];
+float bamboo_wobble[BAMBOO_CAP];
 float bamboo_width = 5.0f;
 
 ////HUD Settings
@@ -81,6 +86,7 @@ int main()
     Rectangle player = { .width = PLAYER_WIDTH, .height = PLAYER_HEIGHT };
     player.x = (w - player.width) / 2;
     player.y = (h - player.height) / 2;
+    int player_jump_count = 0;
 
     Vector2 velocity = {0};
 
@@ -100,6 +106,7 @@ int main()
 
     while (!WindowShouldClose())
     {
+
         if (IsKeyPressed(KEY_DEBUG_TOGGLE)) {
             debug_enabled = !debug_enabled;
         }
@@ -112,16 +119,25 @@ int main()
         h = GetScreenHeight();
 
         if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) 
-            velocity.x -= SPEED_INCREMENT;
+            velocity.x -= X_SPEED_INCREMENT;
         
         if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) 
-            velocity.x += SPEED_INCREMENT;
+            velocity.x += X_SPEED_INCREMENT;
         
-        if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) 
-            velocity.y -= SPEED_INCREMENT;
-        
-        if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) 
-            velocity.y += SPEED_INCREMENT;
+        if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W))
+        {
+            if (player_jump_count < 2)
+            {
+                velocity.y = -JUMP_SPEED;
+                player_jump_count++;
+            }
+        }
+
+        float speed = Vector2Length(velocity);
+        if (speed > SPEED_LIMIT)
+        {
+            velocity = Vector2Scale(Vector2Normalize(velocity), SPEED_LIMIT);
+        }
 
         player.x += (int)velocity.x;
         player.y += (int)velocity.y;
@@ -141,6 +157,7 @@ int main()
         if (player.y > (h-PLAYER_HEIGHT)) {
             player.y = h-PLAYER_HEIGHT;
             velocity.y = 0;
+            player_jump_count = 0;
         }
 
         velocity.x *= FRICTION;
@@ -171,8 +188,13 @@ int main()
                 int feet_above_bamboo = player.y + PLAYER_HEIGHT < b.y + fudge_factor;
                 int would_fall_below = player.y + PLAYER_HEIGHT + velocity.y >= b.y;
                 if (feet_above_bamboo && would_fall_below && CheckCollisionCircleRec(b, bamboo_width * 2.0f, player)) {
+                    if (player_jump_count > 0)
+                    {
+                        bamboo_wobble[index] += 20;
+                    }
                     player.y = b.y - PLAYER_HEIGHT;
                     velocity.y = 0;
+                    player_jump_count = 0;
                 }
             }
         }
@@ -220,8 +242,10 @@ int main()
         DrawRectangleGradientV(0, 0, w, h, color_sky, color_base);
         
         for (int i = 0; i < BAMBOO_CAP; i++) {
+            bamboo_wobble[i] *= 0.5;
             Vector2 src = bamboo[i];
             Vector2 dst = (Vector2){src.x + bamboo_tilt[i], h};
+            src.x += bamboo_wobble[i];
             DrawLineEx(src, dst, BAMBOO_THICC, BAMBOO_COLOR);
         }
         
@@ -312,8 +336,8 @@ const Color ColorLerp(const Color c1, const Color c2, const float t){
 }
 
 void bamboo_generate(int w, int h) {
-    float bamboo_heightline = h - (float)h * 0.5f;
-    float bamboo_height_variation = bamboo_heightline * 0.4f;
+    float bamboo_heightline = h - (float)h * 0.4f;
+    float bamboo_height_variation = bamboo_heightline * 0.3f;
     float bamboo_x_variation = bamboo_width * 10.0f;
     float bamboo_step = w / ((float)BAMBOO_CAP - 1);
     for (int index = 0; index < BAMBOO_CAP; ++index) {
